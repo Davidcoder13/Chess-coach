@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chess Coach</title>
+<link rel="stylesheet" href="vendor/cm-chessboard/assets/chessboard.css">
+<style>
+:root{--bg:#f1f0ee;--panel:#fff;--ink:#2b2b2b;--mute:#777;--line:#ddd;--green:#629924;--lt:#f0d9b5;--dk:#b58863}
+@media (prefers-color-scheme:dark){:root{--bg:#161512;--panel:#262421;--ink:#ddd;--mute:#999;--line:#3a3834}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+h1{font-size:18px;margin:0 8px 0 0}main{max-width:1000px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px}
+h2{font-size:16px;margin:0 0 10px}input,button,select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink)}
+button{cursor:pointer}button.go{background:var(--green);border-color:var(--green);color:#fff}
+#prog{display:none;flex:1;min-width:200px}#prog div{height:8px;background:var(--line);border-radius:4px;overflow:hidden}#bar{height:100%;width:0;background:var(--green)}
+#ptxt{font-size:12px;color:var(--mute)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button.on{background:var(--green);color:#fff;border-color:var(--green)}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.stats b{display:block;font-size:20px}.stats span{color:var(--mute);font-size:12px}
+#heat{display:grid;grid-template-columns:36px repeat(24,1fr);gap:2px;font-size:10px;color:var(--mute);overflow-x:auto}
+#heat i{aspect-ratio:1;border-radius:2px;background:var(--line);min-width:14px}
+#games{max-height:260px;overflow:auto}.g{display:flex;gap:10px;padding:5px 4px;border-bottom:1px solid var(--line);cursor:pointer}.g:hover{background:var(--bg)}.g .r{width:16px;font-weight:700}
+.win{color:var(--green)}.loss{color:#cc3333}.draw{color:var(--mute)}
+#rev{display:none;grid-template-columns:minmax(280px,420px) 1fr;gap:16px}@media(max-width:700px){#rev{grid-template-columns:1fr}}
+.bd{width:100%;max-width:420px}.bwrap{position:relative}.ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.brilliant{background:#7fd6c4;color:#000}.warn{border-left:4px solid #f0883e;padding:6px 10px;background:var(--bg)}.tr{border-bottom:1px solid var(--line);padding:10px 0}#tactics{padding-left:18px}
+#moves{display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start;max-height:380px;overflow:auto}
+#moves span{padding:1px 5px;border-radius:3px;cursor:pointer}#moves span.cur{outline:2px solid var(--green)}
+.inaccuracy{background:#f6e7a8;color:#000}.mistake{background:#f5c28a;color:#000}.blunder{background:#f0a3a3;color:#000}
+.mute{color:var(--mute)}
+</style></head><body>
+<header>
+  <h1>Chess Coach</h1>
+  <input id="user" placeholder="Chess.com username" size="18">
+  <button class="go" id="fetch">Fetch games</button>
+  <button id="pgnBtn">Upload PGN</button><input id="pgn" type="file" accept=".pgn,.txt" hidden>
+  <button id="exp">Export</button><button id="impBtn">Import</button><input id="imp" type="file" accept=".json" hidden>
+  <div id="prog"><div><div id="bar"></div></div><span id="ptxt"></span></div>
+</header>
+<main>
+  <nav class="tabs" id="nav" hidden><button data-v="plan" class="on">Plan</button><button data-v="dash">Dashboard</button><button data-v="rewind">Blunder Rewind</button><button data-v="galaxy">Opening Galaxy</button><button data-v="traps">Traps</button></nav>
+  <section><div id="status" class="mute">Enter a username to start. Your games and analysis are stored in this browser only.</div></section>
+  <section id="plan" hidden><h2>Your plan</h2><div id="planbody"></div></section>
+  <section id="rewindv" hidden><h2 id="rwtitle">Blunder Rewind</h2><p id="rwmsg" class="mute"></p><div id="rwboard" class="bd"></div>
+    <p id="rwfb"></p><p><button id="rwhint">Show answer</button> <button id="rwnext">Next</button></p></section>
+  <section id="galaxyv" hidden><h2>Opening Galaxy</h2><p><select id="galColor"><option value="w">As White</option><option value="b">As Black</option></select>
+    <span class="mute">Green: handled well · Orange: frequent mistakes or low score · Grey: barely played</span></p><div id="gal"></div></section>
+  <section id="trapv" hidden><h2>Trap warnings</h2><div id="trapbody"></div></section>
+  <section id="dash" hidden>
+    <div class="tabs" id="tabs"></div>
+    <div class="stats" id="stats"></div>
+    <h2>When you play best</h2><div id="heat"></div>
+    <h2 style="margin-top:16px">Games</h2><div id="games"></div>
+  </section>
+  <section id="rev"><div><div class="bwrap bd"><div id="board"></div><svg id="ov" class="ov" viewBox="0 0 8 8"></svg></div>
+    <p><button id="prev">◀</button> <button id="next">▶</button> <span id="info" class="mute"></span></p>
+    <label><input type="checkbox" id="ovToggle" checked> Show tactics</label><ul id="tactics"></ul></div>
+    <div><h2 id="rtitle"></h2><div id="moves"></div></div></section>
+</main>
+<script type="module" src="js/app.js"></script>
+</body></html>
