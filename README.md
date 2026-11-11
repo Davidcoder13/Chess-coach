@@ -1,23 +1,49 @@
-# Chess Coach (phases 1–4)
+# Chess Coach (v2.0)
 
-Static site for GitHub Pages. Fetches your Chess.com games (or a PGN upload), analyzes them with Stockfish in your browser,
-and shows per-time-control dashboards, a time-of-day heatmap, and a move-graded game review. Data is stored in this browser (IndexedDB).
+A client-side chess coaching and game review platform designed for GitHub Pages. Fetches your Chess.com games (or PGN uploads), analyzes them with Stockfish in your browser via WebAssembly, and delivers personalized training routines, blunder rewind puzzles, and opening insights. All data is persisted locally in your browser (IndexedDB).
 
-## Setup
-1. `./scripts/vendor.sh` (needs Node/npm) — downloads Stockfish lite WASM and cm-chessboard into `vendor/`. Commit the `vendor/` folder.
-2. Test locally: `python -m http.server` then open http://localhost:8000 (ES modules and workers need http, not file://).
-3. Push to GitHub, then Settings → Pages → deploy from the main branch.
+## Features
 
-## How analysis runs
-Newest game first at depth 18, then every other game newest → oldest at depth 12. Pauses while the tab is hidden; resumes on return.
-Use Export regularly to back up your analysis.
+- **Personalized Training Plan**: Top weaknesses breakdown (by game phase and color), weekly checklists, and daily tactical workouts.
+- **Blunder Rewind Puzzles**: Daily 5-puzzle training sessions generated directly from your actual game mistakes, complete with interactive step progress and haptic sound effects.
+- **Game Review & Live Evaluation Bar**:
+  - Vertical animated evaluation bar showing centipawn / mate advantage.
+  - Tactical overlay visualizing pins (📌), forks (🍴), and hanging pieces (⚠️).
+  - AI Coach speech bubbles explaining blunders in plain English with alternative moves.
+  - Accuracy comparison widget (White vs. Black accuracy score & move classification breakdown).
+  - 2-column move table with auto-scroll and move quality badges.
+  - Controls: First (`Home`), Prev (`←`), Autoplay (`Space`), Next (`→`), Last (`End`), and Flip Board (`F`).
+- **Interactive Opening Galaxy**:
+  - D3 force-directed tree graph mapping your opening repertoire.
+  - Color coded nodes (green = strong, orange = trouble lines, grey = rarely played).
+  - Unexplored book lines ("ghosts") using Lichess opening datasets.
+  - Smooth pan & zoom navigation.
+  - Repertoire performance table with game counts and win percentages.
+- **Trap Warnings**: Automatic detection of recurring blunders in the first 12 moves across your games with one-click drill mode.
+- **When You Play Best**: Heatmap visualization of win rates across 24 hours × 7 days.
+- **Audio & Haptics**: Built-in synthesized Web Audio effects for moves, captures, puzzle solutions, and errors (zero external audio dependencies).
+- **Themes**: Modern dark (default) and light themes with smooth transitions.
 
-## Phase 3
-- **Plan**: top 3 weaknesses (mistakes/blunders per 100 moves by phase and colour), weekly checklist, daily routine.
-- **Blunder Rewind**: 5 puzzles per session from your own mistakes (positions that weren't already lost). Solved puzzles don't return.
+## Setup & Local Development
 
-## Phase 4
-- **Overlays** (game review): 📌 pins to the king, 🍴 forks, ⚠️ undefended pieces, drawn over the board with a plain-English list.
-- **Opening Galaxy**: your first 5 moves per colour as a force graph. Grey = barely played; no opening book yet, so truly unexplored lines can't be shown.
-- **Trap Warnings**: positions in your first 12 moves where you made a mistake at least twice; one-move drill for each. Flagged on the Plan page.
-- **Grading** now includes Excellent and Brilliant. Older analyses re-run automatically (analysis version 2).
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Verify vendor assets:
+   ```bash
+   npm run vendor
+   ```
+3. Run locally:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:8000` (ES modules and Web Workers require an HTTP server, not `file://`).
+
+4. Deploy:
+   Push to GitHub, then go to **Settings → Pages → Deploy from branch (main)**.
+
+## Quality Checks
+
+- `npm test`: Runs the Vitest engine regression suite.
+- `npm run vendor`: Validates Stockfish 19 WASM and board assets.

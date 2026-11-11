@@ -1,60 +1,266 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chess Coach</title>
-<link rel="stylesheet" href="vendor/cm-chessboard/assets/chessboard.css">
-<style>
-:root{--bg:#f1f0ee;--panel:#fff;--ink:#2b2b2b;--mute:#777;--line:#ddd;--green:#629924;--lt:#f0d9b5;--dk:#b58863}
-@media (prefers-color-scheme:dark){:root{--bg:#161512;--panel:#262421;--ink:#ddd;--mute:#999;--line:#3a3834}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
-header{background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-h1{font-size:18px;margin:0 8px 0 0}main{max-width:1000px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
-section{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px}
-h2{font-size:16px;margin:0 0 10px}input,button,select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink)}
-button{cursor:pointer}button.go{background:var(--green);border-color:var(--green);color:#fff}
-#prog{display:none;flex:1;min-width:200px}#prog div{height:8px;background:var(--line);border-radius:4px;overflow:hidden}#bar{height:100%;width:0;background:var(--green)}
-#ptxt{font-size:12px;color:var(--mute)}
-.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button.on{background:var(--green);color:#fff;border-color:var(--green)}
-.stats{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.stats b{display:block;font-size:20px}.stats span{color:var(--mute);font-size:12px}
-#heat{display:grid;grid-template-columns:36px repeat(24,1fr);gap:2px;font-size:10px;color:var(--mute);overflow-x:auto}
-#heat i{aspect-ratio:1;border-radius:2px;background:var(--line);min-width:14px}
-#games{max-height:260px;overflow:auto}.g{display:flex;gap:10px;padding:5px 4px;border-bottom:1px solid var(--line);cursor:pointer}.g:hover{background:var(--bg)}.g .r{width:16px;font-weight:700}
-.win{color:var(--green)}.loss{color:#cc3333}.draw{color:var(--mute)}
-#rev{display:none;grid-template-columns:minmax(280px,420px) 1fr;gap:16px}@media(max-width:700px){#rev{grid-template-columns:1fr}}
-.bd{width:100%;max-width:420px}.bwrap{position:relative}.ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.brilliant{background:#7fd6c4;color:#000}.warn{border-left:4px solid #f0883e;padding:6px 10px;background:var(--bg)}.tr{border-bottom:1px solid var(--line);padding:10px 0}#tactics{padding-left:18px}
-#moves{display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start;max-height:380px;overflow:auto}
-#moves span{padding:1px 5px;border-radius:3px;cursor:pointer}#moves span.cur{outline:2px solid var(--green)}
-.inaccuracy{background:#f6e7a8;color:#000}.mistake{background:#f5c28a;color:#000}.blunder{background:#f0a3a3;color:#000}
-.mute{color:var(--mute)}
-</style></head><body>
-<header>
-  <h1>Chess Coach</h1>
-  <input id="user" placeholder="Chess.com username" size="18">
-  <button class="go" id="fetch">Fetch games</button>
-  <button id="pgnBtn">Upload PGN</button><input id="pgn" type="file" accept=".pgn,.txt" hidden>
-  <button id="exp">Export</button><button id="impBtn">Import</button><input id="imp" type="file" accept=".json" hidden>
-  <div id="prog"><div><div id="bar"></div></div><span id="ptxt"></span></div>
-</header>
-<main>
-  <nav class="tabs" id="nav" hidden><button data-v="plan" class="on">Plan</button><button data-v="dash">Dashboard</button><button data-v="rewind">Blunder Rewind</button><button data-v="galaxy">Opening Galaxy</button><button data-v="traps">Traps</button></nav>
-  <section><div id="status" class="mute">Enter a username to start. Your games and analysis are stored in this browser only.</div></section>
-  <section id="plan" hidden><h2>Your plan</h2><div id="planbody"></div></section>
-  <section id="rewindv" hidden><h2 id="rwtitle">Blunder Rewind</h2><p id="rwmsg" class="mute"></p><div id="rwboard" class="bd"></div>
-    <p id="rwfb"></p><p><button id="rwhint">Show answer</button> <button id="rwnext">Next</button></p></section>
-  <section id="galaxyv" hidden><h2>Opening Galaxy</h2><p><select id="galColor"><option value="w">As White</option><option value="b">As Black</option></select>
-    <span class="mute">Green: handled well · Orange: frequent mistakes or low score · Grey: barely played</span></p><div id="gal"></div></section>
-  <section id="trapv" hidden><h2>Trap warnings</h2><div id="trapbody"></div></section>
-  <section id="dash" hidden>
-    <div class="tabs" id="tabs"></div>
-    <div class="stats" id="stats"></div>
-    <h2>When you play best</h2><div id="heat"></div>
-    <h2 style="margin-top:16px">Games</h2><div id="games"></div>
-  </section>
-  <section id="rev"><div><div class="bwrap bd"><div id="board"></div><svg id="ov" class="ov" viewBox="0 0 8 8"></svg></div>
-    <p><button id="prev">◀</button> <button id="next">▶</button> <span id="info" class="mute"></span></p>
-    <label><input type="checkbox" id="ovToggle" checked> Show tactics</label><ul id="tactics"></ul></div>
-    <div><h2 id="rtitle"></h2><div id="moves"></div></div></section>
-</main>
-<script type="module" src="js/app.js"></script>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chess Coach — AI Game Analysis & Training</title>
+  <link rel="stylesheet" href="vendor/cm-chessboard/assets/chessboard.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">♞</div>
+        <div class="brand-title">
+          Chess Coach
+          <span class="brand-badge">v2.0 • AI</span>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="search-group">
+          <input id="user" placeholder="Chess.com username" size="16">
+          <button class="btn btn-primary btn-sm" id="fetch">Fetch</button>
+        </div>
+
+        <button class="btn btn-secondary" id="pgnBtn" title="Upload a PGN file">
+          <span>📁</span> Upload PGN
+        </button>
+        <input id="pgn" type="file" accept=".pgn,.txt" hidden>
+
+        <button class="btn btn-ghost" id="exp" title="Export IndexedDB database">
+          <span>⬇️</span> Export
+        </button>
+        <button class="btn btn-ghost" id="impBtn" title="Import database backup">
+          <span>⬆️</span> Import
+        </button>
+        <input id="imp" type="file" accept=".json" hidden>
+
+        <button class="btn btn-ghost btn-icon" id="soundToggle" title="Toggle Move Sounds">
+          <span id="soundIcon">🔊</span>
+        </button>
+        <button class="btn btn-ghost btn-icon" id="themeToggle" title="Toggle Dark/Light Theme">
+          <span id="themeIcon">☀️</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Engine Queue Progress Bar -->
+    <div id="prog" class="progress-widget" style="display:none">
+      <span class="pulse-indicator">⚙️ Analyzing:</span>
+      <div class="progress-track"><div id="bar" class="progress-bar-fill"></div></div>
+      <span id="ptxt">Initializing engine...</span>
+    </div>
+  </header>
+
+  <!-- Navigation Bar -->
+  <nav class="app-nav" id="nav" hidden>
+    <button data-v="plan" class="nav-pill on"><span>🎯</span> Plan</button>
+    <button data-v="dash" class="nav-pill"><span>📊</span> Dashboard</button>
+    <button data-v="rewind" class="nav-pill"><span>⏪</span> Blunder Rewind</button>
+    <button data-v="galaxy" class="nav-pill"><span>🌌</span> Opening Galaxy</button>
+    <button data-v="traps" class="nav-pill"><span>⚠️</span> Traps</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="app-main">
+    <!-- Status Toast / Notification Banner -->
+    <div id="statusToast" class="status-toast">
+      <span>💡</span>
+      <div id="status">Enter your Chess.com username above to start. Games and Stockfish analysis are stored securely in this browser (IndexedDB).</div>
+    </div>
+
+    <!-- Plan View -->
+    <section id="plan" hidden>
+      <div id="planbody"></div>
+    </section>
+
+    <!-- Blunder Rewind View -->
+    <section id="rewindv" hidden>
+      <div class="card puzzle-card">
+        <div class="card-title" style="justify-content: space-between;">
+          <h3 id="rwtitle">Blunder Rewind</h3>
+          <span class="badge badge-info">Tactical Drill</span>
+        </div>
+        <div id="rwstepper" class="puzzle-stepper"></div>
+        <div id="rwmsg"></div>
+        <div id="rwboard" class="bd" style="max-width: 440px; margin: 0 auto;"></div>
+        <div id="rwfb" class="puzzle-feedback"></div>
+        <div class="puzzle-actions">
+          <button class="btn btn-secondary" id="rwhint">Show Answer</button>
+          <button class="btn btn-primary" id="rwnext">Next Puzzle ➔</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Opening Galaxy View -->
+    <section id="galaxyv" hidden>
+      <div class="card">
+        <div class="galaxy-toolbar">
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <select id="galColor">
+              <option value="w">Playing as White</option>
+              <option value="b">Playing as Black</option>
+            </select>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer;">
+              <input type="checkbox" id="galGhost" checked> Show Unexplored Lines
+            </label>
+          </div>
+          <div class="galaxy-legend">
+            <span class="legend-item"><span class="legend-dot dot-green"></span> Strong Repertoire</span>
+            <span class="legend-item"><span class="legend-dot dot-orange"></span> Trouble Line</span>
+            <span class="legend-item"><span class="legend-dot dot-grey"></span> Rarely Played</span>
+            <span class="legend-item"><span class="legend-dot dot-ghost"></span> Unexplored Book</span>
+          </div>
+        </div>
+        <p id="galnote" class="mute" style="margin-bottom: 8px; font-size: 13px;"></p>
+        <div id="gal"></div>
+        <div class="opening-table-card">
+          <div class="card-title">
+            <span class="card-icon">📖</span>
+            <h3>Repertoire Performance</h3>
+          </div>
+          <div id="galtable"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trap Warnings View -->
+    <section id="trapv" hidden>
+      <div class="card">
+        <div class="card-title">
+          <span class="card-icon">⚠️</span>
+          <h3>Repeated Opening Traps</h3>
+        </div>
+        <p class="mute" style="margin-bottom: 16px; font-size: 14px;">Positions where you've blundered multiple times in the first 12 moves. Drill them to eliminate recurring losses.</p>
+        <div id="trapbody"></div>
+      </div>
+    </section>
+
+    <!-- Dashboard View -->
+    <section id="dash" hidden>
+      <div class="tabs-filter" id="tabs"></div>
+      <div class="stats-grid" id="stats"></div>
+
+      <div class="heatmap-card">
+        <div class="card-title">
+          <span class="card-icon">🕒</span>
+          <h3>When You Play Best</h3>
+          <span class="badge badge-info">Win Rate by Day & Hour</span>
+        </div>
+        <div id="heat"></div>
+      </div>
+
+      <div class="games-list-card">
+        <div class="card-title">
+          <span class="card-icon">♟️</span>
+          <h3>Recent Games</h3>
+        </div>
+        <div id="games" class="games-container"></div>
+      </div>
+    </section>
+
+    <!-- Game Review Screen -->
+    <section id="rev" class="review-section">
+      <!-- Left Column: Board, Controls & Coach Speech -->
+      <div class="board-column">
+        <div class="board-with-eval">
+          <!-- Evaluation Bar -->
+          <div class="eval-bar-wrapper" id="evalBar">
+            <div id="evalBarFill" class="eval-bar-fill"></div>
+            <span id="evalBarText" class="eval-bar-text">0.0</span>
+          </div>
+
+          <!-- Board Container -->
+          <div class="bwrap bd">
+            <div id="board"></div>
+            <svg id="ov" class="ov" viewBox="0 0 8 8"></svg>
+          </div>
+        </div>
+
+        <!-- Board Control Toolbar -->
+        <div class="board-controls">
+          <div class="control-btn-group">
+            <button class="btn btn-icon" id="first" title="First Move (Home)">⏮</button>
+            <button class="btn btn-icon" id="prev" title="Previous Move (Left Arrow)">◀</button>
+            <button class="btn btn-icon" id="autoplay" title="Auto Play / Pause (Space)">▶</button>
+            <button class="btn btn-icon" id="next" title="Next Move (Right Arrow)">▶</button>
+            <button class="btn btn-icon" id="last" title="Last Move (End)">⏭</button>
+            <button class="btn btn-icon" id="flip" title="Flip Board (F)">🔄</button>
+          </div>
+          <span id="info" class="eval-info-badge"></span>
+        </div>
+
+        <!-- Tactics Overlay Toggle & Alerts -->
+        <div class="tactics-box">
+          <div class="tactics-header">
+            <span>Tactical Awareness</span>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" id="ovToggle" checked> Visual Overlays
+            </label>
+          </div>
+          <ul id="tactics" class="tactics-list"></ul>
+        </div>
+
+        <!-- Coach Speech Bubble -->
+        <div id="coach" class="coach-speech-wrapper" hidden></div>
+      </div>
+
+      <!-- Right Column: Match Header, Accuracy Widget, Summary & Moves -->
+      <div class="review-panel">
+        <div class="match-header-card">
+          <h2 id="rtitle" class="match-title">vs Opponent</h2>
+          <div id="ropening" class="match-opening"></div>
+        </div>
+
+        <!-- Accuracy & Move Quality Breakdown -->
+        <div class="accuracy-widget" id="accWidget">
+          <div class="acc-row">
+            <div>
+              <div style="font-size:12px; color:var(--text-muted);">White Accuracy</div>
+              <div id="whiteAccScore" class="acc-score">–</div>
+            </div>
+            <div>
+              <div style="font-size:12px; color:var(--text-muted); text-align:right;">Black Accuracy</div>
+              <div id="blackAccScore" class="acc-score" style="text-align:right;">–</div>
+            </div>
+          </div>
+          <div class="acc-bar-track">
+            <div id="accBarWhite" class="acc-bar-white" style="width:50%"></div>
+            <div id="accBarBlack" class="acc-bar-black" style="width:50%"></div>
+          </div>
+          <div id="gradeChips" class="grade-chips"></div>
+        </div>
+
+        <!-- Game Narrative Summary -->
+        <p id="csum" class="game-summary-card" hidden></p>
+
+        <!-- 2-Column Move List -->
+        <div class="move-list-card">
+          <div class="moves-header">
+            <span>#</span>
+            <span>White</span>
+            <span>Black</span>
+          </div>
+          <div id="moves" class="moves-container"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function showErr(m) {
+      var s = document.getElementById('status');
+      if (s) {
+        s.style.color = '#f43f5e';
+        s.textContent = 'Notice: ' + m + (location.protocol === 'file:' ? ' — Run through a local web server (npm run dev or python -m http.server), not by double-clicking the file.' : '');
+      }
+    }
+    addEventListener('error', function(e) { showErr(e.message || 'script failed to load'); });
+    addEventListener('unhandledrejection', function(e) { showErr(String(e.reason && e.reason.message || e.reason)); });
+  </script>
+  <script type="module" src="js/app.js" onerror="showErr('js/app.js or one of its imports failed to load')"></script>
+</body>
+</html>

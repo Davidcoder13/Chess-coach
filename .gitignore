@@ -1,0 +1,4 @@
+node_modules/
+.vitest/
+coverage/
+.DS_Store

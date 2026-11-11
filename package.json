@@ -1,0 +1,14 @@
+{
+  "name": "chess-coach",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "serve": "python -m http.server 8000",
+    "vendor": "node scripts/vendor.mjs",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

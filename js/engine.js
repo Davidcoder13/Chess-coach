@@ -1,11 +1,14 @@
 // Stockfish worker wrapper, move grading, and the background analysis queue.
 import { Chess } from 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0/+esm';
+import { winPct, grade, accuracyOf, clamp, mat, moveAcc } from './engine-core.js';
+
+export { winPct, grade, accuracyOf };
 
 let worker, ready;
 export async function initEngine() {
   if (ready) return ready;
   ready = (async () => {
-    let file = 'stockfish-18-lite-single.js'; // default; vendor/engine.json can override
+    let file = 'stockfish-19-lite-single.js'; // default; vendor/engine.json can override
     try { file = (await (await fetch('vendor/engine.json')).json()).file || file; } catch {}
     worker = new Worker('vendor/' + file);
     await send('uci', l => l === 'uciok');
@@ -34,12 +37,6 @@ export async function evalFen(fen, depth) {
   return { cp, best: lines.at(-1).split(' ')[1] };
 }
 
-const winPct = cp => 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1);
-const VAL = { p: 1, n: 3, b: 3, r: 5, q: 9 };
-const mat = (fen, c) => { let s = 0; for (const ch of fen.split(' ')[0]) { const v = VAL[ch.toLowerCase()]; if (v) s += ch === ch.toUpperCase() ? v : -v; } return c === 'w' ? s : -s; };
-export function grade(loss, isBest) {
-  return loss < 2 ? (isBest ? 'best' : 'excellent') : loss < 5 ? 'good' : loss < 10 ? 'inaccuracy' : loss < 20 ? 'mistake' : 'blunder';
-}
 // Brilliant: a (near-)best move that gives up material (net of the engine's best reply), from a position that
 // isn't already clearly winning, and that doesn't leave you worse. beforeW/afterW are the mover's win%.
 function isBrilliant(m, reply, loss, beforeW, afterW) {
@@ -64,11 +61,7 @@ export async function analyzeGame(game, depth) {
     if ((g === 'best' || g === 'excellent') && isBrilliant(m, evals[i + 1].best, loss, white ? bW : 100 - bW, white ? aW : 100 - aW)) g = 'brilliant';
     return { san: m.san, color: m.color, cp: evals[i + 1].cp, best: evals[i].best, loss, grade: g };
   });
-  const acc = c => {
-    const l = plies.filter(p => p.color === c);
-    return l.length ? l.reduce((s, p) => s + Math.max(0, 103.1668 * Math.exp(-0.04354 * p.loss) - 3.1669), 0) / l.length : null;
-  };
-  return { v: 2, depth, plies, accuracy: { w: acc('w'), b: acc('b') } };
+  return { v: 2, accv: 2, depth, plies, accuracy: accuracyOf(plies) };
 }
 
 // Newest game gets full depth first, then the rest run newest -> oldest at a lighter depth.
