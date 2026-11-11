@@ -5,7 +5,8 @@ let worker, ready;
 export async function initEngine() {
   if (ready) return ready;
   ready = (async () => {
-    const { file } = await (await fetch('vendor/engine.json')).json();
+    let file = 'stockfish-18-lite-single.js'; // default; vendor/engine.json can override
+    try { file = (await (await fetch('vendor/engine.json')).json()).file || file; } catch {}
     worker = new Worker('vendor/' + file);
     await send('uci', l => l === 'uciok');
     await send('isready', l => l === 'readyok');
